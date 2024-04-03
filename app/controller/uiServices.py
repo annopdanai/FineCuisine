@@ -1,7 +1,7 @@
 import sys
 from PySide6 import QtWidgets, QtCore, QtGui
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtWidgets import QApplication, QMainWindow, QFrame, QFileDialog, QVBoxLayout, QFormLayout, QSizePolicy, QDialog
+from PySide6.QtWidgets import QApplication, QMainWindow, QFrame, QFileDialog, QVBoxLayout, QFormLayout, QSizePolicy, QDialog, QListWidgetItem
 from PySide6.QtGui import QImage, QPixmap
 from app.controller.userServices import *
 import transaction
@@ -187,76 +187,69 @@ class MainPage(QMainWindow, mainPage):
             self.notificationDetail.setIndent(0)
             self.notificationDetail.setText(notification)
             self.verticalLayout_4.addWidget(self.notificationDetail)
-            
-            
         
     def openHistory(self):
         self.pageWidget.setCurrentIndex(3)
         self.historyTable.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
         self.historyTable.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-        self.confirmBtn = QtWidgets.QPushButton("Confirm")
-        # decorate the button
-        self.confirmBtn.setStyleSheet("background-color: #4CAF50; color: white;")
+        
         self.cancelBtn = QtWidgets.QPushButton("Cancel")
         self.cancelBtn.setStyleSheet("background-color: #f44336; color: white;")
         #add data to the table
-        self.historyTable.setRowCount(5)
-        self.historyTable.setColumnCount(6)
+        self.historyTable.setRowCount(2)
+        self.historyTable.setColumnCount(5)
+        self.historyTable.setHorizontalHeaderLabels(["ID", "Course", "Date", "Status", "Cancel"])
         self.historyTable.setItem(0, 0, QtWidgets.QTableWidgetItem("1"))
         self.historyTable.setItem(0, 1, QtWidgets.QTableWidgetItem("Course 1"))
         self.historyTable.setItem(0, 2, QtWidgets.QTableWidgetItem(f"{datetime.now()}"))
         self.historyTable.setItem(0, 3, QtWidgets.QTableWidgetItem("Pending"))
-        self.historyTable.setCellWidget(0, 4, self.confirmBtn)
-        self.confirmBtn.clicked.connect(self.confirmation)
-        self.historyTable.setCellWidget(0, 5, self.cancelBtn)
+        self.historyTable.setCellWidget(0, 4, self.cancelBtn)
         self.cancelBtn.clicked.connect(self.cancellation)
         self.historyTable.setItem(1, 0, QtWidgets.QTableWidgetItem("2"))
         self.historyTable.setItem(1, 1, QtWidgets.QTableWidgetItem("Course 2"))
         self.historyTable.setItem(1, 2, QtWidgets.QTableWidgetItem(f"{datetime.now()}"))
-        self.historyTable.setItem(1, 3, QtWidgets.QTableWidgetItem("Completed"))
+        self.historyTable.setItem(1, 3, QtWidgets.QTableWidgetItem("Completed"))   
         
     def cancellation(self):
         self.historyTable.setItem(0, 3, QtWidgets.QTableWidgetItem("Cancelled"))
         self.cancelBtn.hide()
-        self.confirmBtn.hide()
-        
-    def confirmation(self):
-        self.historyTable.setItem(0, 3, QtWidgets.QTableWidgetItem("Confirmed"))
-        self.confirmBtn.hide()
-        self.cancelBtn.hide()   
 
     def openFeedback(self):
         self.pageWidget.setCurrentIndex(4)
+        self.feedbackSubmitBtn.clicked.connect(self.submitFeedback)
         self.addFeedback()
         
+    
     def addFeedback(self):
-        for i in range(5):
-            self.feedbackDetail = QtWidgets.QLabel(self.scrollAreaWidgetContents)
-            self.feedbackDetail.setObjectName(f"feedbackDetail_{i}")
-            sizePolicy = QtWidgets.QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-            sizePolicy.setHorizontalStretch(0)
-            sizePolicy.setVerticalStretch(0)
-            sizePolicy.setHeightForWidth(self.feedbackDetail.sizePolicy().hasHeightForWidth())
-            self.feedbackDetail.setSizePolicy(sizePolicy)
-            self.feedbackDetail.setMinimumSize(QSize(460, 200))
-            self.feedbackDetail.setMaximumSize(QSize(460, 200))
-            self.feedbackDetail.setLayoutDirection(Qt.LeftToRight)
-            self.feedbackDetail.setStyleSheet(u"color: rgb(0, 0, 0);\n"
-    "font: 16pt \"Arial\";\n"
-    "border: 1 solid black;\n"
-    "border-radius: 8px")
-            self.feedbackDetail.setFrameShape(QFrame.NoFrame)
-            self.feedbackDetail.setFrameShadow(QFrame.Sunken)
-            self.feedbackDetail.setTextFormat(Qt.AutoText)
-            self.feedbackDetail.setAlignment(Qt.AlignLeading|Qt.AlignLeft|Qt.AlignTop)
-            self.feedbackDetail.setWordWrap(True)
-            self.feedbackDetail.setMargin(10)
-            self.feedbackDetail.setIndent(0)
+        self.feedbackListWidget.clear()
+        allFeedbacks = userServices.getAllFeedbacks()
+        for feedbackItem in allFeedbacks:
+            self.feedbackListWidget.insertItem(0,f"Rating: {feedbackItem['rating']}/5\n{feedbackItem['title']}\n{feedbackItem['detail']}")
+    def submitFeedback(self):
+        rating = None
+        for i in range(6): 
+            button = self.findChild(QtWidgets.QRadioButton, f"star{i}Radio")
+            if button and button.isChecked():
+                rating = i
+                print(rating)
+                break 
             
-            self.feedbackDetail.setText("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.")
+        if rating == None:
+            alert = QtWidgets.QMessageBox()
+            alert.setText("Please rate the service")
+            alert.exec()
+            return 
+        data = self.feedbackTextBox.toPlainText()
+        title, details = (data.split("\n", 1) + [""])[:2]  
+
+        if not data:
+            userServices.createNewFeedback("", "", rating) 
+        else:
+            userServices.createNewFeedback(title, details, rating)
+        self.addFeedback()
+    
+    
             
-            self.verticalLayout_3.addWidget(self.feedbackDetail)
-        
     
     def logout(self):
         self.loginPage = LoginPage()
@@ -541,23 +534,18 @@ class NewsPage(QMainWindow, newsPage):
         self.hide()
         
     def openNews(self, item):
-        newsID = 0
-        for title, id in self.mapIDandTitle:
-            if title == item.text():
-                newsID = id
-                break
-        self.news = userServices.getNewInfo(newsID).toJson()
-        self.newsDetail = NewsDetail(self.news)
-        self.newsDetail.show()
+        newsID = item.data(QtCore.Qt.UserRole)
+        news = userServices.getNewInfo(newsID).toJson()
+        self.newsDetail = NewsDetail(news)
+        self.newsDetail.show()  
     
     def updateNews(self):
         self.listWidget.clear()
         newsList = userServices.getAllNews()
-        curentmap = []
-        for news in newsList:
-            self.listWidget.insertItem(0, news["title"])
-            curentmap.append((news["title"], news["id"]))
-        self.mapIDandTitle = curentmap
+        for newsItem in newsList:
+            news = QListWidgetItem(newsItem['title'])
+            news.setData(QtCore.Qt.UserRole, newsItem['id'])
+            self.listWidget.insertItem(0, news)
     
 class NewsDetail(QMainWindow, newsDetail):
     def __init__(self, news):

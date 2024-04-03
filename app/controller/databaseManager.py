@@ -1,5 +1,6 @@
 from app.db.database import *
 from app.model.booking import Booking
+from app.model.feedback import Feedback
 from app.model.user import *
 from app.model.courseDetail import CourseMenu
 from app.model.news import *
@@ -15,10 +16,10 @@ class dataManager:
         return checkUser(username, password)
     
     def getAllClients():
-        return getAllClients()
+        return getAllClientsDB()
     
     def getAllAdmin():
-        return getAllAdmins()
+        return getAllAdminsDB()
     
     def validationUserRegister(email):
         return assignRole(email)
@@ -30,10 +31,10 @@ class dataManager:
         return getAdmin(username)
     
     def getClientInfo(clientID):
-        return getClientInfo(clientID)
+        return getClientDBInfo(clientID)
     
     def getAdminInfo(adminID):
-        return getAdminInfo(adminID)
+        return getAdminDBInfo(adminID)
     
     def registerAdmin(username, password, email, phone):
         user = Admin(username, password, email, phone)
@@ -46,19 +47,19 @@ class dataManager:
         transaction.commit()
         return user
         
-    def createMealBooking(mealType, date, time, partySize):
-        generateMealBooking(mealType, date, time, partySize)
+    def createMealBooking(mealType, date, time, number):
+        generateMealBooking(mealType, date, time, number)
         return True
     
     def getBooking(bookingID):
-        return getBooking(bookingID)
+        return getBookingDB(bookingID)
     
     def getAllUserBookings():
         return getAllBookings()
     
     def getAllMealBookings(mealType):
-        return getAllMealBookings(mealType)
-        
+        return getAllMealBookingsDB(mealType)
+    
     def getBooking(mealType, date, time):
         return getMealBooking(mealType, date, time)
     
@@ -77,7 +78,7 @@ class dataManager:
         return getUserBookings(clientID)
     
     def updateMealBooking(mealType, date, time, partySize):
-        return updateMealBooking(mealType, date, time, partySize)
+        return updateMealBookingDB(mealType, date, time, partySize)
     
     def changeBookingStatus(bookingID, status):
         return updateBookingStatus(bookingID, status)
@@ -101,11 +102,11 @@ class dataManager:
         return registerMembership(clientID, data)
     
     def checkMembership(clientID):
-        return checkMembership(clientID)
+        return checkMembershipDB(clientID)
     
     def checkDuplicateUser(username, email):
-        clientInfo = getAllClients()
-        adminInfo = getAllAdmins()
+        clientInfo = getAllClientsDB()
+        adminInfo = getAllAdminsDB()
         for client in clientInfo:
             if username == client['username'] or email == client['email']:
                 print("Username or email already exists")
@@ -129,10 +130,10 @@ class dataManager:
         
     # Course Menu
     def addCourseMenu(type, links):
-        return addCourseMenu(type, links)
+        return addCourseMenuDB(type, links)
     
     def getCourseMenu(courseType):
-        return getCourseMenu(courseType)
+        return getCourseMenuDB(courseType)
     
     def addNews(title,image,details,PostDate):
         new = News(title,image,details,PostDate)
@@ -146,7 +147,17 @@ class dataManager:
         data = getNewsInformation(id)
         return data
 
-
+    def addFeedback(title,description, rating):
+        feedback = Feedback(title,description, rating)
+        createFeedbackDB(feedback)
+        return True
+    
+    def getFeedbackInfo(feedbackID):
+        return getFeedbacksByID(feedbackID)
+    
+    def getFeedbacks():
+        return getAllFeedbacksDB()
+  
     
         
         
